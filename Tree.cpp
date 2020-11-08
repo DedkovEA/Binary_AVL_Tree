@@ -55,6 +55,7 @@ class Tree {
                     };
                     self = std::move(to_move.self); 
                     owner = std::move(to_move.owner);
+                    return *this;
                 };
                 iterator& operator=(const iterator& to_copy) { 
                     if(&to_copy == this) {
@@ -62,6 +63,7 @@ class Tree {
                     };
                     self = to_copy.self; 
                     owner = to_copy.owner;
+                    return *this;
                 };
 
                 operator Node_Ptr() const { return self.lock(); };
@@ -106,10 +108,17 @@ class Tree {
         const_iterator cbegin() const { return begin(); };
         iterator end() const { return iterator(mc_end); };
         const_iterator cend() const { return mc_end; };
-        reverse_iterator rbegin() const;
-        const_reverse_iterator rcbegin() const { return rbegin(); };
-        reverse_iterator rend() const { return reverse_iterator(mc_end); };
-        const_reverse_iterator rcend() const { return mc_end; };
+        reverse_iterator rbegin() const { return reverse_iterator(mc_end); };
+        const_reverse_iterator rcbegin() const { return const_reverse_iterator(mc_end); };
+        reverse_iterator rend() const { return reverse_iterator(begin()); };
+        const_reverse_iterator rcend() const { return const_reverse_iterator(begin()); };
+
+        iterator before_end() const;
+
+        // reverse_iterator rbegin() const;
+        // const_reverse_iterator rcbegin() const { return rbegin(); };
+        // reverse_iterator rend() const { return reverse_iterator(mc_end); };
+        // const_reverse_iterator rcend() const { return mc_end; };
 
         void print() {
             std::deque<Node_Ptr> queue;
@@ -212,12 +221,12 @@ typename Tree<T, Compare>::iterator Tree<T, Compare>::begin() const {
 };
 
 template<class T, class Compare>
-typename Tree<T, Compare>::reverse_iterator Tree<T, Compare>::rbegin() const {
+typename Tree<T, Compare>::iterator Tree<T, Compare>::before_end() const {
     Node_Ptr temp = m_root;
     while(temp->right) {
         temp = temp->right;
     };
-    return reverse_iterator(iterator(temp, self));
+    return iterator(temp, self);
 };
 
 //Different rotations and balances
@@ -374,6 +383,10 @@ const T& Tree<T, Compare>::iterator::operator*() const {
 
 template<class T, class Compare>
 typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator++() {
+    if(*this == owner->mc_before_begin) {
+        *this = owner->begin();
+        return *this;
+    };
     Node_Ptr temp = self.lock();
     if(temp->right) {
         temp = temp->right;
@@ -421,6 +434,10 @@ typename Tree<T, Compare>::iterator Tree<T, Compare>::iterator::operator++(int) 
 // for BidirectionalIterator
 template<class T, class Compare>
 typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator--() {
+    if(*this == owner->mc_end) {
+        *this = owner->before_end();
+        return *this;
+    };
     Node_Ptr temp = self.lock();
     if(temp->left) {
         temp = temp->left;
