@@ -2,16 +2,46 @@
 #include <iostream>
 #include <deque>
 
-template<class T>
-bool is_shared_ptrs_equal(const std::shared_ptr<T>& first, const std::shared_ptr<T>& second);
 
 template<class T, class Compare=std::less<T>>
 class Tree {
     private:
         struct Node;
+        class iterator;
 
         using Node_Ptr = std::shared_ptr<Node>;
         using Weak_Node_Ptr = std::weak_ptr<Node>;
+
+    public:
+        using const_iterator = iterator;
+        using reverse_iterator = std::reverse_iterator<iterator>;
+        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+        Tree() {};
+        
+        std::pair<iterator, bool> insert(const T&& insert_value, Compare compare = Compare());
+        std::pair<iterator, bool> insert(const T& insert_value, Compare compare = Compare());
+        void print();
+
+        // Different iterator getters
+        iterator begin() const;
+        const_iterator cbegin() const { return begin(); };
+        iterator end() const { return iterator(mc_end); };
+        const_iterator cend() const { return mc_end; };
+        reverse_iterator rbegin() const { return reverse_iterator(mc_end); };
+        const_reverse_iterator rcbegin() const { return const_reverse_iterator(mc_end); };
+        reverse_iterator rend() const { return reverse_iterator(begin()); };
+        const_reverse_iterator rcend() const { return const_reverse_iterator(begin()); };
+
+        iterator before_end() const;
+
+    private:
+        Node_Ptr m_root;
+        std::shared_ptr<Tree> self = std::shared_ptr<Tree>(this);
+
+        // pass-the-end and befor-begin iterators
+        const iterator mc_end = iterator(self);
+        const iterator mc_before_begin = iterator(self);
 
         struct Node {
             Node_Ptr left;
@@ -32,14 +62,9 @@ class Tree {
                 std::shared_ptr<Tree> owner;
 
             public:
-                // using iterator_category = std::bidirectional_iterator_tag;
-
-                // using value_type      = T;
-                // using difference_type = std::ptrdiff_t;
-                // using pointer         = T*;
                 using reference       = const T&;
 
-                iterator() {};
+                iterator() = delete;
                 iterator(iterator&& init) : self(std::move(init.self)), owner(std::move(init.owner)) {};
                 iterator(const iterator& init) : self(init.self), owner(init.owner) {};
                 ~iterator() {};
@@ -49,22 +74,8 @@ class Tree {
                 iterator(Weak_Node_Ptr&& init, const std::shared_ptr<Tree>& owner) : self(init), owner(owner) {};
                 iterator(const std::shared_ptr<Tree>& owner) : owner(owner) {};
 
-                iterator& operator=(iterator&& to_move) {
-                    if(&to_move == this) {
-                        return *this;
-                    };
-                    self = std::move(to_move.self); 
-                    owner = std::move(to_move.owner);
-                    return *this;
-                };
-                iterator& operator=(const iterator& to_copy) { 
-                    if(&to_copy == this) {
-                        return *this;
-                    };
-                    self = to_copy.self; 
-                    owner = to_copy.owner;
-                    return *this;
-                };
+                iterator& operator=(const iterator& to_copy); 
+                iterator& operator=(iterator&& to_move);
 
                 operator Node_Ptr() const { return self.lock(); };
                 operator Weak_Node_Ptr() const { return self; };
@@ -82,64 +93,9 @@ class Tree {
                 // for BidirectionalIterator
                 iterator& operator--();
                 iterator operator--(int);
-
-
         };
 
-        using const_iterator = iterator;
-        using reverse_iterator = std::reverse_iterator<iterator>;
-        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-        Node_Ptr m_root;
-        std::shared_ptr<Tree> self = std::shared_ptr<Tree>(this);
-
-        // pass-the-end and befor-begin iterators
-        const iterator mc_end = iterator(self);
-        const iterator mc_before_begin = iterator(self);
-
-    public:
-        Tree() {};
-        
-        void insert(const T&& insert_value, Compare compare = Compare());
-        void insert(const T& insert_value, Compare compare = Compare());
-
-        // Different iterator getters
-        iterator begin() const;
-        const_iterator cbegin() const { return begin(); };
-        iterator end() const { return iterator(mc_end); };
-        const_iterator cend() const { return mc_end; };
-        reverse_iterator rbegin() const { return reverse_iterator(mc_end); };
-        const_reverse_iterator rcbegin() const { return const_reverse_iterator(mc_end); };
-        reverse_iterator rend() const { return reverse_iterator(begin()); };
-        const_reverse_iterator rcend() const { return const_reverse_iterator(begin()); };
-
-        iterator before_end() const;
-
-        // reverse_iterator rbegin() const;
-        // const_reverse_iterator rcbegin() const { return rbegin(); };
-        // reverse_iterator rend() const { return reverse_iterator(mc_end); };
-        // const_reverse_iterator rcend() const { return mc_end; };
-
-        void print() {
-            std::deque<Node_Ptr> queue;
-            queue.push_back(m_root);
-            Node_Ptr temp_p;
-            while(!queue.empty()) {
-                temp_p = queue.front();
-                queue.pop_front();
-                if(temp_p != nullptr) {
-                    std::cout << (temp_p->value) << " ";
-                    if(temp_p->left != nullptr) {
-                        queue.push_back(temp_p->left);
-                    };
-                    if(temp_p->right != nullptr) {
-                        queue.push_back(temp_p->right);
-                    };
-                };
-            };       
-        };
-
-    private:
         void m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent);
         void m_emplace_left(const Node_Ptr& node, const Node_Ptr& parent);
 
@@ -158,17 +114,41 @@ class Tree {
 //Method realization
 
 template<class T, class Compare>
-void Tree<T, Compare>::insert(const T&& i_value, Compare compare) {
+void Tree<T, Compare>::print() {
+    std::deque<Node_Ptr> queue;
+    queue.push_back(m_root);
+    Node_Ptr temp_p;
+    while(!queue.empty()) {
+        temp_p = queue.front();
+        queue.pop_front();
+        if(temp_p != nullptr) {
+            std::cout << (temp_p->value) << " ";
+            if(temp_p->left != nullptr) {
+                queue.push_back(temp_p->left);
+            };
+            if(temp_p->right != nullptr) {
+                queue.push_back(temp_p->right);
+            };
+        };
+    };       
+};
+
+template<class T, class Compare>
+std::pair<typename Tree<T, Compare>::iterator, bool> Tree<T, Compare>::insert(const T&& i_value, Compare compare) {
     if(!m_root) {
         m_root = std::make_shared<Node>(Node(mc_before_begin, i_value));
+        return std::make_pair<iterator, bool>(iterator(m_root, self), true);
     } else {
         std::shared_ptr<Node> temp = m_root;
         bool not_constructed = true;
+        bool contained = false;
+        iterator ret_it(self);
         while(not_constructed) {
             if(compare(i_value, temp->value)) {
                 if(!(temp->left)) {
                     temp->left = std::make_shared<Node>(Node(temp, i_value));
                     temp->diff++;
+                    ret_it = iterator(temp->left, self);
                     not_constructed = false;
                 } else {
                     temp = temp->left;
@@ -177,10 +157,15 @@ void Tree<T, Compare>::insert(const T&& i_value, Compare compare) {
                 if(!(temp->right)) {
                     temp->right = std::make_shared<Node>(temp, i_value);
                     temp->diff--;
+                    ret_it = iterator(temp->right, self);
                     not_constructed = false;
                 } else {
                     temp = temp->right;
                 };
+            } else {
+                contained = true;
+                ret_it = iterator(temp, self);
+                not_constructed = false;
             };
         };
         while(temp != m_root) {
@@ -202,12 +187,13 @@ void Tree<T, Compare>::insert(const T&& i_value, Compare compare) {
             if(temp == m_root) {break;};
             temp = temp->parent.lock();
         };
+        return std::make_pair<iterator, bool>(std::move(ret_it), std::move(!contained));
     };
 };
  
 template<class T, class Compare>
-void Tree<T, Compare>::insert(const T& i_value, Compare compare) {
-    insert(std::move(T(i_value)), compare);
+std::pair<typename Tree<T, Compare>::iterator, bool> Tree<T, Compare>::insert(const T& i_value, Compare compare) {
+    return insert(std::move(T(i_value)), compare);
 };
 
 // Begin and rbegin iterator getters
@@ -375,6 +361,26 @@ Tree<T, Compare>::Node::Node(const Node_Ptr& parent, const T&& value) : parent(p
 
 // class Tree<T>::iterator methods
 
+template<class T, class Compare>
+typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator=(typename Tree<T, Compare>::iterator&& to_move) {
+    if(&to_move == this) {
+        return *this;
+    };
+    self = std::move(to_move.self); 
+    owner = std::move(to_move.owner);
+    return *this;
+};
+
+template<class T, class Compare>
+typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator=(const typename Tree<T, Compare>::iterator& to_copy) { 
+    if(&to_copy == this) {
+        return *this;
+    };
+    self = to_copy.self; 
+    owner = to_copy.owner;
+    return *this;
+};
+
 // for LegacyIterator
 template<class T, class Compare>
 const T& Tree<T, Compare>::iterator::operator*() const {
@@ -467,25 +473,6 @@ typename Tree<T, Compare>::iterator Tree<T, Compare>::iterator::operator--(int) 
 };
 
 
-// diffferent functions (not class members)
-
-template<class T>
-bool is_shared_ptrs_equal(const std::shared_ptr<T>& first, const std::shared_ptr<T>& second) {
-    if(!first) {
-        if(!second) {
-            return true;
-        } else {
-            return false;
-        };
-    } else {
-        if(!second) {
-            return false;
-        } else {
-            return (first == second);
-        };
-    };
-};
-
 
 int main() {
     Tree<int> tr;
@@ -501,6 +488,10 @@ int main() {
     for(auto it = tr.rbegin(); it != tr.rend(); it++) {
         std::cout << *it << ' ';
     };
+
+    auto res1 = tr.insert(2);
+    auto res2 = tr.insert(2);
+    std::cout << "\n" << (res1.first == res2.first) << " " << res1.second << " " << res2.second;
 
     return 0;
 };
