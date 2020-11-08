@@ -36,6 +36,7 @@ class Tree {
     public:
         Tree() {};
         
+        void insert(const T&& insert_value, Compare compare = Compare());
         void insert(const T& insert_value, Compare compare = Compare());
        
         void print() {
@@ -58,24 +59,25 @@ class Tree {
         };
 
     private:
-        void m_emplace_right(Node_Ptr& node, Node_Ptr& parent);
-        void m_emplace_left(Node_Ptr& node, Node_Ptr& parent);
+        void m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent);
+        void m_emplace_left(const Node_Ptr& node, const Node_Ptr& parent);
 
-        void m_rotate_right(Node_Ptr&);
-        void m_rotate_left(Node_Ptr&);
-        void m_big_rotate_right(Node_Ptr&);
-        void m_big_rotate_left(Node_Ptr&);
+        void m_rotate_right(const Node_Ptr&);
+        void m_rotate_left(const Node_Ptr&);
+        void m_big_rotate_right(const Node_Ptr&);
+        void m_big_rotate_left(const Node_Ptr&);
 
-        void m_left_balance(Node_Ptr&);
-        void m_right_balance(Node_Ptr&);
+        void m_left_balance(const Node_Ptr&);
+        void m_right_balance(const Node_Ptr&);
 };
         
 
 //template<class T, class Compare>
 //Tree<T>::Node::Tree_Node();
+//Method realization
 
 template<class T, class Compare>
-void Tree<T, Compare>::insert(const T& i_value, Compare compare) {
+void Tree<T, Compare>::insert(const T&& i_value, Compare compare) {
     if(!m_root) {
         m_root = std::make_shared<Node>(Node(mc_ptr_before_begin, i_value));
     } else {
@@ -122,9 +124,15 @@ void Tree<T, Compare>::insert(const T& i_value, Compare compare) {
     };
 };
  
+template<class T, class Compare>
+void Tree<T, Compare>::insert(const T& i_value, Compare compare) {
+    insert(std::move(T(i_value)), compare);
+};
+
+//Different rotations and balances
 
 template<class T, class Compare>
-void Tree<T, Compare>::m_rotate_right(Node_Ptr& a) {
+void Tree<T, Compare>::m_rotate_right(const Node_Ptr& a) {
     Node_Ptr b = a->left;
     if(a == m_root) {
         m_root = b;
@@ -145,7 +153,7 @@ void Tree<T, Compare>::m_rotate_right(Node_Ptr& a) {
 };
 
 template<class T, class Compare>
-void Tree<T, Compare>::m_rotate_left(Node_Ptr& a) {
+void Tree<T, Compare>::m_rotate_left(const Node_Ptr& a) {
     Node_Ptr b = a->right;
     if(a == m_root) {
         m_root = b;
@@ -166,7 +174,7 @@ void Tree<T, Compare>::m_rotate_left(Node_Ptr& a) {
 };
 
 template<class T, class Compare>
-void Tree<T, Compare>::m_big_rotate_right(Node_Ptr& a) {
+void Tree<T, Compare>::m_big_rotate_right(const Node_Ptr& a) {
     Node_Ptr b = a->left;
     Node_Ptr c = b->right;
     if(a == m_root) {
@@ -193,7 +201,7 @@ void Tree<T, Compare>::m_big_rotate_right(Node_Ptr& a) {
 };
 
 template<class T, class Compare>
-void Tree<T, Compare>::m_big_rotate_left(Node_Ptr& a) {
+void Tree<T, Compare>::m_big_rotate_left(const Node_Ptr& a) {
     Node_Ptr b = a->right;
     Node_Ptr c = b->left;
     if(a == m_root) {
@@ -220,7 +228,7 @@ void Tree<T, Compare>::m_big_rotate_left(Node_Ptr& a) {
 };
 
 template<class T, class Compare>
-void Tree<T, Compare>::m_left_balance(Node_Ptr& node) {
+void Tree<T, Compare>::m_left_balance(const Node_Ptr& node) {
     Node_Ptr parent = node->parent.lock();
     if(node->diff == -1) {
         m_big_rotate_right(parent);
@@ -230,7 +238,7 @@ void Tree<T, Compare>::m_left_balance(Node_Ptr& node) {
 };
 
 template<class T, class Compare>
-void Tree<T, Compare>::m_right_balance(Node_Ptr& node) {
+void Tree<T, Compare>::m_right_balance(const Node_Ptr& node) {
     Node_Ptr parent = node->parent.lock();
     if(node->diff == 1) {
         m_big_rotate_left(parent);
@@ -240,7 +248,7 @@ void Tree<T, Compare>::m_right_balance(Node_Ptr& node) {
 };
 
 template<class T, class Compare>
-void Tree<T, Compare>::m_emplace_right(Node_Ptr& node, Node_Ptr& parent) {
+void Tree<T, Compare>::m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent) {
     if(node) {
         node->parent = parent;
     };
@@ -248,7 +256,7 @@ void Tree<T, Compare>::m_emplace_right(Node_Ptr& node, Node_Ptr& parent) {
 };
 
 template<class T, class Compare>
-void Tree<T, Compare>::m_emplace_left(Node_Ptr& node, Node_Ptr& parent) {
+void Tree<T, Compare>::m_emplace_left(const Node_Ptr& node, const Node_Ptr& parent) {
     if(node) {
         node->parent = parent;
     };
@@ -256,7 +264,7 @@ void Tree<T, Compare>::m_emplace_left(Node_Ptr& node, Node_Ptr& parent) {
 };
 
 
-// structure Tree<T>::Node
+// structure Tree<T>::Node methods
 
 template<class T, class Compare>
 Tree<T, Compare>::Node::Node(const Node_Ptr& parent, const T& value) : parent(parent), value(value), diff(0) {};
