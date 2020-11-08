@@ -6,9 +6,14 @@
 template<class T, class Compare=std::less<T>>
 class Tree {
     private:
+        struct Node;
+
+        using Node_Ptr = std::shared_ptr<Node>;
+        using Weak_Node_Ptr = std::weak_ptr<Node>;
+
         struct Node {
-            using Node_Ptr = std::shared_ptr<Node>;
-            using Weak_Node_Ptr  = std::weak_ptr<Node>;
+            //using Node_Ptr = std::shared_ptr<Node>;
+            //using Weak_Node_Ptr  = std::weak_ptr<Node>;
 
             Node_Ptr left;
             Node_Ptr right;
@@ -23,9 +28,6 @@ class Tree {
 
         };
 
-        using Node_Ptr = typename Node::Node_Ptr;
-        using Weak_Node_Ptr = typename Node::Weak_Node_Ptr;
-
         Node_Ptr m_root;
 
         // service variables
@@ -38,7 +40,7 @@ class Tree {
         
         void insert(const T&& insert_value, Compare compare = Compare());
         void insert(const T& insert_value, Compare compare = Compare());
-       
+
         void print() {
             std::deque<Node_Ptr> queue;
             queue.push_back(m_root);
