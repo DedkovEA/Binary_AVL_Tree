@@ -12,9 +12,6 @@ class Tree {
         using Weak_Node_Ptr = std::weak_ptr<Node>;
 
         struct Node {
-            //using Node_Ptr = std::shared_ptr<Node>;
-            //using Weak_Node_Ptr  = std::weak_ptr<Node>;
-
             Node_Ptr left;
             Node_Ptr right;
             Weak_Node_Ptr parent;
@@ -25,7 +22,6 @@ class Tree {
 
             Node(const Node_Ptr& parent, const T& value);
             Node(const Node_Ptr& parent, const T&& value);
-
         };
 
         Node_Ptr m_root;
@@ -33,7 +29,6 @@ class Tree {
         // service variables
         const Node_Ptr mc_ptr_end;
         const Node_Ptr mc_ptr_before_begin;
-
 
     public:
         Tree() {};
