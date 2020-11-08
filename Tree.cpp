@@ -26,12 +26,19 @@ class Tree {
             Node(const Node_Ptr& parent, const T&& value);
         };
 
-        class iterator : std::iterator<std::bidirectional_iterator_tag, T> {
+        class iterator : public std::iterator<std::bidirectional_iterator_tag, T> {
             private:
                 Weak_Node_Ptr self;
                 std::shared_ptr<Tree> owner;
 
             public:
+                // using iterator_category = std::bidirectional_iterator_tag;
+
+                // using value_type      = T;
+                // using difference_type = std::ptrdiff_t;
+                // using pointer         = T*;
+                using reference       = const T&;
+
                 iterator() {};
                 iterator(iterator&& init) : self(std::move(init.self)), owner(std::move(init.owner)) {};
                 iterator(const iterator& init) : self(init.self), owner(init.owner) {};
@@ -77,7 +84,7 @@ class Tree {
 
         };
 
-        using const_iterator = const iterator;
+        using const_iterator = iterator;
         using reverse_iterator = std::reverse_iterator<iterator>;
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
@@ -210,7 +217,7 @@ typename Tree<T, Compare>::reverse_iterator Tree<T, Compare>::rbegin() const {
     while(temp->right) {
         temp = temp->right;
     };
-    return reverse_iterator(temp, self);
+    return reverse_iterator(iterator(temp, self));
 };
 
 //Different rotations and balances
