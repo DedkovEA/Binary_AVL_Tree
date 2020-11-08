@@ -96,14 +96,17 @@ class Tree {
         };
 
 
+        // emplaces subtree with top node instead of right or left parent's subtree
         void m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent);
         void m_emplace_left(const Node_Ptr& node, const Node_Ptr& parent);
 
+        // performing rotations with top node given
         void m_rotate_right(const Node_Ptr&);
         void m_rotate_left(const Node_Ptr&);
         void m_big_rotate_right(const Node_Ptr&);
         void m_big_rotate_left(const Node_Ptr&);
 
+        // performing balancing dependent on node b from which we reach top node a to perform rotation with
         void m_left_balance(const Node_Ptr&);
         void m_right_balance(const Node_Ptr&);
 };
@@ -217,6 +220,7 @@ typename Tree<T, Compare>::iterator Tree<T, Compare>::before_end() const {
 
 //Different rotations and balances
 
+// performing rotations with top node given
 template<class T, class Compare>
 void Tree<T, Compare>::m_rotate_right(const Node_Ptr& a) {
     Node_Ptr b = a->left;
@@ -313,6 +317,7 @@ void Tree<T, Compare>::m_big_rotate_left(const Node_Ptr& a) {
     else if (temp_diff_c == 1) {a->diff = 0; b->diff = -1; c->diff = 0;};
 };
 
+// performing balancing dependent on node b from which we reach top node a to perform rotation with
 template<class T, class Compare>
 void Tree<T, Compare>::m_left_balance(const Node_Ptr& node) {
     Node_Ptr parent = node->parent.lock();
@@ -333,6 +338,7 @@ void Tree<T, Compare>::m_right_balance(const Node_Ptr& node) {
     };
 };
 
+// emplaces subtree with top node instead of right or left parent's subtree
 template<class T, class Compare>
 void Tree<T, Compare>::m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent) {
     if(node) {
