@@ -14,6 +14,7 @@ class Tree {
 
     using Node_Ptr = std::shared_ptr<Node>;
     using Weak_Node_Ptr = std::weak_ptr<Node>;
+    using Result_Pair = std::pair<iterator, bool>;
 
  public:
     using const_iterator = iterator;
@@ -22,10 +23,12 @@ class Tree {
 
     Tree() {};
     
-    std::pair<iterator, bool> insert(T&& insert_value);
-    std::pair<iterator, bool> insert(const T& insert_value);
+    Result_Pair insert(T&& insert_value);
+    Result_Pair insert(const T& insert_value);
 
     const_iterator find(const T& value_to_find) const;
+
+
 
     void print();
 
@@ -116,8 +119,7 @@ class Tree {
     };
 
     template<class InsType>
-    std::pair<iterator, bool> m_insert(InsType&& i_value, 
-                                       Compare compare=Compare());
+    std::pair<iterator, bool> m_insert(InsType&& i_value);
 
 
     // emplaces subtree with top node instead of right or left parent's subtree
@@ -185,14 +187,15 @@ Tree<T, Compare, Alloc>::find(const T& f_value) const {
 
 template<class T, class Compare, class Alloc>
 template<class InsType>
-std::pair<typename Tree<T, Compare, Alloc>::iterator, bool> 
-Tree<T, Compare, Alloc>::m_insert(InsType&& i_value, Compare compare) {
+typename Tree<T, Compare, Alloc>::Result_Pair 
+Tree<T, Compare, Alloc>::m_insert(InsType&& i_value) {
     if(!m_root) {
         m_root = std::allocate_shared<Node>(raw_allocator, 
                                             mc_before_begin, 
                                             std::forward<InsType>(i_value));
         return std::make_pair<iterator, bool>(iterator(m_root, self), true);
     } else {
+        Compare compare = Compare();
         std::shared_ptr<Node> temp = m_root;
         bool not_constructed = true;
         bool contained = false;
@@ -255,13 +258,13 @@ Tree<T, Compare, Alloc>::m_insert(InsType&& i_value, Compare compare) {
 };
  
 template<class T, class Compare, class Alloc>
-std::pair<typename Tree<T, Compare, Alloc>::iterator, bool> 
+typename Tree<T, Compare, Alloc>::Result_Pair 
 Tree<T, Compare, Alloc>::insert(T&& i_value) {
     return m_insert(i_value);
 };
 
 template<class T, class Compare, class Alloc>
-std::pair<typename Tree<T, Compare, Alloc>::iterator, bool> 
+typename Tree<T, Compare, Alloc>::Result_Pair 
 Tree<T, Compare, Alloc>::insert(const T& i_value) {
     return m_insert(i_value);
 };
