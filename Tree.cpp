@@ -6,7 +6,7 @@
 template<class T, 
          class Compare=std::less<T>, 
          class Alloc=std::allocator<T>
-    >
+        >
 class Tree {
  private:
     struct Node;
@@ -24,6 +24,9 @@ class Tree {
     
     std::pair<iterator, bool> insert(T&& insert_value);
     std::pair<iterator, bool> insert(const T& insert_value);
+
+    const_iterator find(const T& value_to_find) const;
+
     void print();
 
     // Different iterator getters
@@ -155,6 +158,29 @@ void Tree<T, Compare, Alloc>::print() {
             };
         };
     };       
+};
+
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::const_iterator 
+Tree<T, Compare, Alloc>::find(const T& f_value) const {
+    if(m_root) {
+        Compare compare = Compare();
+        Node_Ptr temp = m_root;
+        while(true) {
+            if(compare(f_value, temp->value)) {
+                temp = temp->left;
+            } else if (compare(temp->value, f_value)) {
+                temp = temp->right;
+            } else {
+                return const_iterator(temp, self);
+            };
+            if(!temp) {
+                return mc_end;
+            };
+        };
+    } else {
+        return mc_end;
+    };
 };
 
 template<class T, class Compare, class Alloc>
@@ -556,7 +582,7 @@ int main() {
 
     auto res1 = tr.insert(2);
     auto res2 = tr.insert(2);
-    std::cout << "\n" << (res1.first == res2.first) << " " 
+    std::cout << "\n" << (res1.first == tr.find(7)) << " " 
         << res1.second << " " << res2.second;
 
     return 0;
