@@ -3,112 +3,133 @@
 #include <deque>
 
 
-template<class T, class Compare=std::less<T>>
+template<class T, 
+         class Compare=std::less<T>, 
+         class Alloc=std::allocator<T>
+    >
 class Tree {
-    private:
-        struct Node;
-        class iterator;
+ private:
+    struct Node;
+    class iterator;
 
-        using Node_Ptr = std::shared_ptr<Node>;
-        using Weak_Node_Ptr = std::weak_ptr<Node>;
+    using Node_Ptr = std::shared_ptr<Node>;
+    using Weak_Node_Ptr = std::weak_ptr<Node>;
 
-    public:
-        using const_iterator = iterator;
-        using reverse_iterator = std::reverse_iterator<iterator>;
-        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+ public:
+    using const_iterator = iterator;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-        Tree() {};
-        
-        std::pair<iterator, bool> insert(const T&& insert_value, Compare compare = Compare());
-        std::pair<iterator, bool> insert(const T& insert_value, Compare compare = Compare());
-        void print();
+    Tree() {};
+    
+    std::pair<iterator, bool> insert(T&& insert_value);
+    std::pair<iterator, bool> insert(const T& insert_value);
+    void print();
 
-        // Different iterator getters
-        iterator begin() const;
-        const_iterator cbegin() const { return begin(); };
-        iterator end() const { return iterator(mc_end); };
-        const_iterator cend() const { return mc_end; };
-        reverse_iterator rbegin() const { return reverse_iterator(mc_end); };
-        const_reverse_iterator rcbegin() const { return const_reverse_iterator(mc_end); };
-        reverse_iterator rend() const { return reverse_iterator(begin()); };
-        const_reverse_iterator rcend() const { return const_reverse_iterator(begin()); };
+    // Different iterator getters
+    iterator begin() const;
+    const_iterator cbegin() const { return begin(); };
+    iterator end() const { return iterator(mc_end); };
+    const_iterator cend() const { return mc_end; };
+    reverse_iterator rbegin() const 
+        { return reverse_iterator(mc_end); };
+    const_reverse_iterator rcbegin() const 
+        { return const_reverse_iterator(mc_end); };
+    reverse_iterator rend() const 
+        { return reverse_iterator(begin()); };
+    const_reverse_iterator rcend() const 
+        { return const_reverse_iterator(begin()); };
 
-        iterator before_end() const;
+    iterator before_end() const;
 
-    private:
-        Node_Ptr m_root;
-        std::shared_ptr<Tree> self = std::shared_ptr<Tree>(this);
+ private:
+    Alloc raw_allocator;
+    
+    Node_Ptr m_root;
+    std::shared_ptr<Tree> self = std::shared_ptr<Tree>(this);
 
-        // pass-the-end and befor-begin iterators
-        const iterator mc_end = iterator(self);
-        const iterator mc_before_begin = iterator(self);
+    // pass-the-end and befor-begin iterators
+    const iterator mc_end = iterator(self);
+    const iterator mc_before_begin = iterator(self);
 
-        struct Node {
-            Node_Ptr left;
-            Node_Ptr right;
-            Weak_Node_Ptr parent;
+    struct Node {
+        Node_Ptr left;
+        Node_Ptr right;
+        Weak_Node_Ptr parent;
 
-            int8_t diff; // H(L) - H(R)
+        int8_t diff; // H(L) - H(R)
 
-            T value;
+        T value;
 
-            Node(const Node_Ptr& parent, const T& value);
-            Node(const Node_Ptr& parent, const T&& value);
-        };
+        Node(const Node_Ptr& parent, const T& value);
+        Node(const Node_Ptr& parent, T&& value);
+    };
 
-        class iterator : public std::iterator<std::bidirectional_iterator_tag, T> {
-            private:
-                Weak_Node_Ptr self;
-                std::shared_ptr<Tree> owner;
+    class iterator : public std::iterator<std::bidirectional_iterator_tag, T> {
+     private:
+        Weak_Node_Ptr self;
+        std::shared_ptr<Tree> owner;
 
-            public:
-                using reference       = const T&;
+     public:
+        using reference       = const T&;
 
-                iterator() = delete;
-                iterator(iterator&& init) : self(std::move(init.self)), owner(std::move(init.owner)) {};
-                iterator(const iterator& init) : self(init.self), owner(init.owner) {};
-                ~iterator() {};
+        iterator() = delete;
+        iterator(iterator&& init) : self(std::move(init.self)), 
+                                    owner(std::move(init.owner)) {};
+        iterator(const iterator& init) : self(init.self), 
+                                         owner(init.owner) {};
+        ~iterator() {};
 
-                iterator(const Node_Ptr& init, const std::shared_ptr<Tree>& owner) : self(init), owner(owner) {};
-                iterator(const Weak_Node_Ptr& init, const std::shared_ptr<Tree>& owner) : self(init), owner(owner) {};
-                iterator(Weak_Node_Ptr&& init, const std::shared_ptr<Tree>& owner) : self(init), owner(owner) {};
-                iterator(const std::shared_ptr<Tree>& owner) : owner(owner) {};
+        iterator(const Node_Ptr& init, 
+                 const std::shared_ptr<Tree>& owner) : self(init), 
+                                                       owner(owner) {};
+        iterator(const Weak_Node_Ptr& init, 
+                 const std::shared_ptr<Tree>& owner) : self(init), 
+                                                       owner(owner) {};
+        iterator(Weak_Node_Ptr&& init, 
+                 const std::shared_ptr<Tree>& owner) : self(init), 
+                                                       owner(owner) {};
+        iterator(const std::shared_ptr<Tree>& owner) : owner(owner) {};
 
-                iterator& operator=(const iterator& to_copy); 
-                iterator& operator=(iterator&& to_move);
+        iterator& operator=(const iterator& to_copy); 
+        iterator& operator=(iterator&& to_move);
 
-                operator Node_Ptr() const { return self.lock(); };
-                operator Weak_Node_Ptr() const { return self; };
+        operator Node_Ptr() const { return self.lock(); };
+        operator Weak_Node_Ptr() const { return self; };
 
-                // for LegacyIterator
-                const T& operator*() const;
-                iterator& operator++();    
+        // for LegacyIterator
+        const T& operator*() const;
+        iterator& operator++();    
 
-                // for LegacyInputIterator
-                bool operator==(const iterator&) const; // EqualityComparable
-                bool operator!=(const iterator&) const;
-                const T* operator->() const;
-                iterator operator++(int);
+        // for LegacyInputIterator
+        bool operator==(const iterator&) const; // EqualityComparable
+        bool operator!=(const iterator&) const;
+        const T* operator->() const;
+        iterator operator++(int);
 
-                // for BidirectionalIterator
-                iterator& operator--();
-                iterator operator--(int);
-        };
+        // for BidirectionalIterator
+        iterator& operator--();
+        iterator operator--(int);
+    };
+
+    template<class InsType>
+    std::pair<iterator, bool> m_insert(InsType&& i_value, 
+                                       Compare compare=Compare());
 
 
-        // emplaces subtree with top node instead of right or left parent's subtree
-        void m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent);
-        void m_emplace_left(const Node_Ptr& node, const Node_Ptr& parent);
+    // emplaces subtree with top node instead of right or left parent's subtree
+    void m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent);
+    void m_emplace_left(const Node_Ptr& node, const Node_Ptr& parent);
 
-        // performing rotations with top node given
-        void m_rotate_right(const Node_Ptr&);
-        void m_rotate_left(const Node_Ptr&);
-        void m_big_rotate_right(const Node_Ptr&);
-        void m_big_rotate_left(const Node_Ptr&);
+    // performing rotations with top node given
+    void m_rotate_right(const Node_Ptr&);
+    void m_rotate_left(const Node_Ptr&);
+    void m_big_rotate_right(const Node_Ptr&);
+    void m_big_rotate_left(const Node_Ptr&);
 
-        // performing balancing dependent on node b from which we reach top node a to perform rotation with
-        void m_left_balance(const Node_Ptr&);
-        void m_right_balance(const Node_Ptr&);
+    // performing balancing dependent on node b from which we reach top node a to perform rotation with
+    void m_left_balance(const Node_Ptr&);
+    void m_right_balance(const Node_Ptr&);
 };
         
 
@@ -116,8 +137,8 @@ class Tree {
 //Tree<T>::Node::Tree_Node();
 //Method realization
 
-template<class T, class Compare>
-void Tree<T, Compare>::print() {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::print() {
     std::deque<Node_Ptr> queue;
     queue.push_back(m_root);
     Node_Ptr temp_p;
@@ -136,10 +157,14 @@ void Tree<T, Compare>::print() {
     };       
 };
 
-template<class T, class Compare>
-std::pair<typename Tree<T, Compare>::iterator, bool> Tree<T, Compare>::insert(const T&& i_value, Compare compare) {
+template<class T, class Compare, class Alloc>
+template<class InsType>
+std::pair<typename Tree<T, Compare, Alloc>::iterator, bool> 
+Tree<T, Compare, Alloc>::m_insert(InsType&& i_value, Compare compare) {
     if(!m_root) {
-        m_root = std::make_shared<Node>(Node(mc_before_begin, i_value));
+        m_root = std::allocate_shared<Node>(raw_allocator, 
+                                            mc_before_begin, 
+                                            std::forward<InsType>(i_value));
         return std::make_pair<iterator, bool>(iterator(m_root, self), true);
     } else {
         std::shared_ptr<Node> temp = m_root;
@@ -149,7 +174,10 @@ std::pair<typename Tree<T, Compare>::iterator, bool> Tree<T, Compare>::insert(co
         while(not_constructed) {
             if(compare(i_value, temp->value)) {
                 if(!(temp->left)) {
-                    temp->left = std::make_shared<Node>(Node(temp, i_value));
+                    temp->left = 
+                        std::allocate_shared<Node>(raw_allocator, 
+                                                   temp, 
+                                                   std::forward<InsType>(i_value));
                     temp->diff++;
                     ret_it = iterator(temp->left, self);
                     not_constructed = false;
@@ -158,7 +186,10 @@ std::pair<typename Tree<T, Compare>::iterator, bool> Tree<T, Compare>::insert(co
                 };
             } else if (compare(temp->value, i_value)) {
                 if(!(temp->right)) {
-                    temp->right = std::make_shared<Node>(temp, i_value);
+                    temp->right = 
+                        std::allocate_shared<Node>(raw_allocator, 
+                                                   temp, 
+                                                   std::forward<InsType>(i_value));
                     temp->diff--;
                     ret_it = iterator(temp->right, self);
                     not_constructed = false;
@@ -176,9 +207,11 @@ std::pair<typename Tree<T, Compare>::iterator, bool> Tree<T, Compare>::insert(co
                 break;
             };
             Node_Ptr parent_cache = temp->parent.lock();
-            if((parent_cache->diff == 1) && (parent_cache->left == temp)) {
+            if((parent_cache->diff == 1) && 
+               (parent_cache->left == temp)) {
                 m_left_balance(temp);
-            } else if((parent_cache->diff == -1) && (parent_cache->right == temp)) {
+            } else if((parent_cache->diff == -1) && 
+                      (parent_cache->right == temp)) {
                 m_right_balance(temp);
             } else {
                 if(parent_cache->left == temp) {
@@ -190,18 +223,27 @@ std::pair<typename Tree<T, Compare>::iterator, bool> Tree<T, Compare>::insert(co
             if(temp == m_root) {break;};
             temp = temp->parent.lock();
         };
-        return std::make_pair<iterator, bool>(std::move(ret_it), std::move(!contained));
+        return std::make_pair<iterator, bool>(std::move(ret_it), 
+                                              std::move(!contained));
     };
 };
  
-template<class T, class Compare>
-std::pair<typename Tree<T, Compare>::iterator, bool> Tree<T, Compare>::insert(const T& i_value, Compare compare) {
-    return insert(std::move(T(i_value)), compare);
+template<class T, class Compare, class Alloc>
+std::pair<typename Tree<T, Compare, Alloc>::iterator, bool> 
+Tree<T, Compare, Alloc>::insert(T&& i_value) {
+    return m_insert(i_value);
+};
+
+template<class T, class Compare, class Alloc>
+std::pair<typename Tree<T, Compare, Alloc>::iterator, bool> 
+Tree<T, Compare, Alloc>::insert(const T& i_value) {
+    return m_insert(i_value);
 };
 
 // Begin and rbegin iterator getters
-template<class T, class Compare>
-typename Tree<T, Compare>::iterator Tree<T, Compare>::begin() const {
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator 
+Tree<T, Compare, Alloc>::begin() const {
     Node_Ptr temp = m_root;
     while(temp->left) {
         temp = temp->left;
@@ -209,8 +251,9 @@ typename Tree<T, Compare>::iterator Tree<T, Compare>::begin() const {
     return iterator(temp, self);
 };
 
-template<class T, class Compare>
-typename Tree<T, Compare>::iterator Tree<T, Compare>::before_end() const {
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator 
+Tree<T, Compare, Alloc>::before_end() const {
     Node_Ptr temp = m_root;
     while(temp->right) {
         temp = temp->right;
@@ -221,8 +264,8 @@ typename Tree<T, Compare>::iterator Tree<T, Compare>::before_end() const {
 //Different rotations and balances
 
 // performing rotations with top node given
-template<class T, class Compare>
-void Tree<T, Compare>::m_rotate_right(const Node_Ptr& a) {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::m_rotate_right(const Node_Ptr& a) {
     Node_Ptr b = a->left;
     if(a == m_root) {
         m_root = b;
@@ -242,8 +285,8 @@ void Tree<T, Compare>::m_rotate_right(const Node_Ptr& a) {
     else if (b->diff == 0) {a->diff = 1; b->diff = -1;};
 };
 
-template<class T, class Compare>
-void Tree<T, Compare>::m_rotate_left(const Node_Ptr& a) {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::m_rotate_left(const Node_Ptr& a) {
     Node_Ptr b = a->right;
     if(a == m_root) {
         m_root = b;
@@ -263,8 +306,8 @@ void Tree<T, Compare>::m_rotate_left(const Node_Ptr& a) {
     else if (b->diff == 0) {a->diff = -1; b->diff = 1;};
 };
 
-template<class T, class Compare>
-void Tree<T, Compare>::m_big_rotate_right(const Node_Ptr& a) {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::m_big_rotate_right(const Node_Ptr& a) {
     Node_Ptr b = a->left;
     Node_Ptr c = b->right;
     if(a == m_root) {
@@ -290,8 +333,8 @@ void Tree<T, Compare>::m_big_rotate_right(const Node_Ptr& a) {
     else if (temp_diff_c == 1) {a->diff = 0; b->diff = 1; c->diff = 0;};
 };
 
-template<class T, class Compare>
-void Tree<T, Compare>::m_big_rotate_left(const Node_Ptr& a) {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::m_big_rotate_left(const Node_Ptr& a) {
     Node_Ptr b = a->right;
     Node_Ptr c = b->left;
     if(a == m_root) {
@@ -318,8 +361,8 @@ void Tree<T, Compare>::m_big_rotate_left(const Node_Ptr& a) {
 };
 
 // performing balancing dependent on node b from which we reach top node a to perform rotation with
-template<class T, class Compare>
-void Tree<T, Compare>::m_left_balance(const Node_Ptr& node) {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::m_left_balance(const Node_Ptr& node) {
     Node_Ptr parent = node->parent.lock();
     if(node->diff == -1) {
         m_big_rotate_right(parent);
@@ -328,8 +371,8 @@ void Tree<T, Compare>::m_left_balance(const Node_Ptr& node) {
     };
 };
 
-template<class T, class Compare>
-void Tree<T, Compare>::m_right_balance(const Node_Ptr& node) {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::m_right_balance(const Node_Ptr& node) {
     Node_Ptr parent = node->parent.lock();
     if(node->diff == 1) {
         m_big_rotate_left(parent);
@@ -339,16 +382,18 @@ void Tree<T, Compare>::m_right_balance(const Node_Ptr& node) {
 };
 
 // emplaces subtree with top node instead of right or left parent's subtree
-template<class T, class Compare>
-void Tree<T, Compare>::m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent) {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::m_emplace_right(const Node_Ptr& node, 
+                                              const Node_Ptr& parent) {
     if(node) {
         node->parent = parent;
     };
     parent->right = node;
 };
 
-template<class T, class Compare>
-void Tree<T, Compare>::m_emplace_left(const Node_Ptr& node, const Node_Ptr& parent) {
+template<class T, class Compare, class Alloc>
+void Tree<T, Compare, Alloc>::m_emplace_left(const Node_Ptr& node, 
+                                             const Node_Ptr& parent) {
     if(node) {
         node->parent = parent;
     };
@@ -358,17 +403,22 @@ void Tree<T, Compare>::m_emplace_left(const Node_Ptr& node, const Node_Ptr& pare
 
 // structure Tree<T>::Node methods
 
-template<class T, class Compare>
-Tree<T, Compare>::Node::Node(const Node_Ptr& parent, const T& value) : parent(parent), value(value), diff(0) {};
+template<class T, class Compare, class Alloc>
+Tree<T, Compare, Alloc>::Node::Node(const Node_Ptr& parent, 
+                                    const T& value) 
+    : parent(parent), value(value), diff(0) {};
 
-template<class T, class Compare>
-Tree<T, Compare>::Node::Node(const Node_Ptr& parent, const T&& value) : parent(parent), value(value), diff(0) {};
+template<class T, class Compare, class Alloc>
+Tree<T, Compare, Alloc>::Node::Node(const Node_Ptr& parent, T&& value) 
+    : parent(parent), value(value), diff(0) {};
 
 
 // class Tree<T>::iterator methods
 
-template<class T, class Compare>
-typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator=(typename Tree<T, Compare>::iterator&& to_move) {
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator& 
+Tree<T, Compare, Alloc>::iterator::operator=(
+        typename Tree<T, Compare, Alloc>::iterator&& to_move) {
     if(&to_move == this) {
         return *this;
     };
@@ -377,8 +427,11 @@ typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator=(typen
     return *this;
 };
 
-template<class T, class Compare>
-typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator=(const typename Tree<T, Compare>::iterator& to_copy) { 
+
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator& 
+Tree<T, Compare, Alloc>::iterator::operator=(
+        const typename Tree<T, Compare, Alloc>::iterator& to_copy) { 
     if(&to_copy == this) {
         return *this;
     };
@@ -388,13 +441,14 @@ typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator=(const
 };
 
 // for LegacyIterator
-template<class T, class Compare>
-const T& Tree<T, Compare>::iterator::operator*() const {
+template<class T, class Compare, class Alloc>
+const T& Tree<T, Compare, Alloc>::iterator::operator*() const {
     return self.lock()->value;
 };
 
-template<class T, class Compare>
-typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator++() {
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator& 
+Tree<T, Compare, Alloc>::iterator::operator++() {
     if(*this == owner->mc_before_begin) {
         *this = owner->begin();
         return *this;
@@ -421,31 +475,35 @@ typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator++() {
 };    
 
 // for LegacyInputIterator
-template<class T, class Compare>
-bool Tree<T, Compare>::iterator::operator==(const iterator& to_compare) const {        // EqualityComparable
+template<class T, class Compare, class Alloc>
+bool Tree<T, Compare, Alloc>::iterator::operator==(     // EqualityComparable
+        const iterator& to_compare) const {        
     return (self.lock() == to_compare.self.lock());
 };
 
-template<class T, class Compare>
-bool Tree<T, Compare>::iterator::operator!=(const iterator& to_compare) const {
+template<class T, class Compare, class Alloc>
+bool Tree<T, Compare, Alloc>::iterator::operator!=(
+        const iterator& to_compare) const {
     return !(*this == to_compare);
 };
 
-template<class T, class Compare>
-const T* Tree<T, Compare>::iterator::operator->() const {
+template<class T, class Compare, class Alloc>
+const T* Tree<T, Compare, Alloc>::iterator::operator->() const {
     return &(self.lock()->value);
 };
 
-template<class T, class Compare>
-typename Tree<T, Compare>::iterator Tree<T, Compare>::iterator::operator++(int) {
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator 
+Tree<T, Compare, Alloc>::iterator::operator++(int) {
     iterator temp = *this;
     ++(*this);
     return temp; 
 };
 
 // for BidirectionalIterator
-template<class T, class Compare>
-typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator--() {
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator& 
+Tree<T, Compare, Alloc>::iterator::operator--() {
     if(*this == owner->mc_end) {
         *this = owner->before_end();
         return *this;
@@ -471,8 +529,9 @@ typename Tree<T, Compare>::iterator& Tree<T, Compare>::iterator::operator--() {
     };
 };
 
-template<class T, class Compare>
-typename Tree<T, Compare>::iterator Tree<T, Compare>::iterator::operator--(int) {
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator 
+Tree<T, Compare, Alloc>::iterator::operator--(int) {
     iterator temp = *this;
     --(*this);
     return temp;
@@ -481,7 +540,7 @@ typename Tree<T, Compare>::iterator Tree<T, Compare>::iterator::operator--(int) 
 
 
 int main() {
-    Tree<int> tr;
+    Tree<int, std::greater<int>> tr;
     int N;
     std::cin >> N;
     int tmp = 0;
@@ -497,7 +556,8 @@ int main() {
 
     auto res1 = tr.insert(2);
     auto res2 = tr.insert(2);
-    std::cout << "\n" << (res1.first == res2.first) << " " << res1.second << " " << res2.second;
+    std::cout << "\n" << (res1.first == res2.first) << " " 
+        << res1.second << " " << res2.second;
 
     return 0;
 };
