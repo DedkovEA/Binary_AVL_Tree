@@ -26,6 +26,8 @@ class Tree {
     Result_Pair insert(T&& insert_value);
     Result_Pair insert(const T& insert_value);
 
+    iterator erase(iterator position);
+
     const_iterator find(const T& value_to_find) const;
 
 
@@ -74,7 +76,7 @@ class Tree {
     class iterator : public std::iterator<std::bidirectional_iterator_tag, T> {
      private:
         Weak_Node_Ptr self;
-        std::shared_ptr<Tree> owner;
+        std::weak_ptr<Tree> owner;
 
      public:
         using reference       = const T&;
@@ -90,7 +92,7 @@ class Tree {
                  const std::shared_ptr<Tree>& owner) : self(init), 
                                                        owner(owner) {};
         iterator(const Weak_Node_Ptr& init, 
-                 const std::shared_ptr<Tree>& owner) : self(init), 
+                 const std::weak_ptr<Tree>& owner) : self(init), 
                                                        owner(owner) {};
         iterator(Weak_Node_Ptr&& init, 
                  const std::shared_ptr<Tree>& owner) : self(init), 
@@ -119,8 +121,13 @@ class Tree {
     };
 
     template<class InsType>
-    std::pair<iterator, bool> m_insert(InsType&& i_value);
+    Result_Pair m_insert(InsType&& i_value);
 
+    iterator m_erase(Node_Ptr node_to_erase);
+
+
+    // Here const means that pointer remains on the same node, 
+    // tree structure changes!
 
     // emplaces subtree with top node instead of right or left parent's subtree
     void m_emplace_right(const Node_Ptr& node, const Node_Ptr& parent);
@@ -133,8 +140,8 @@ class Tree {
     void m_big_rotate_left(const Node_Ptr&);
 
     // performing balancing dependent on node b from which we reach top node a to perform rotation with
-    void m_left_balance(const Node_Ptr&);
-    void m_right_balance(const Node_Ptr&);
+    void m_left_balance(const Node_Ptr&); // when left a-subtree's height lesser (a.diff -> -2)
+    void m_right_balance(const Node_Ptr&); // when right a-subtree's height lesser (a.diff -> 2) 
 };
         
 
@@ -160,6 +167,64 @@ void Tree<T, Compare, Alloc>::print() {
             };
         };
     };       
+};
+
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator 
+Tree<T, Compare, Alloc>::m_erase(Node_Ptr e_node) {
+    if(e_node->left || e_node->right) {
+        Node_Ptr temp = e_node;
+        if(temp->left) {
+            temp = temp->left;
+            while(temp->right) {
+                temp = temp->right;
+            };
+        } else {
+            temp = temp->right;
+            while(temp->left) {
+                temp = temp->left;
+            };
+        };
+        std::swap(temp->value, e_node->value);
+        return m_erase(temp);
+    } else {
+        iterator ret_it = iterator(e_node, self);
+        ++ret_it;
+        Node_Ptr temp = e_node;
+        Node_Ptr parent_cache = e_node->parent.lock();
+        if(parent_cache->left == e_node) {    //not actually destroyed
+            parent_cache->left.reset();
+        } else {
+            parent_cache->right.reset();
+        };
+        
+        while(temp != m_root) {
+            parent_cache = temp->parent.lock();
+            if(parent_cache->diff == 1) {
+                if(parent_cache->left == temp) {
+                    break;
+                } else {
+                    m_right_balance(parent_cache->left);
+                };
+            } else if (parent_cache->diff == -1) {
+                if(parent_cache->right == temp) {
+                    break;
+                } else {
+                    m_left_balance(parent_cache->right);
+                };
+            };
+
+            if(temp == m_root) { break; };
+            temp = temp->parent.lock();
+        };
+        return ret_it;
+    };
+};
+
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::iterator 
+Tree<T, Compare, Alloc>::erase(iterator position) {
+    return m_erase(position);
 };
 
 template<class T, class Compare, class Alloc>
@@ -249,7 +314,7 @@ Tree<T, Compare, Alloc>::m_insert(InsType&& i_value) {
                     parent_cache->diff--;
                 };
             };
-            if(temp == m_root) {break;};
+            if(temp == m_root) { break; };
             temp = temp->parent.lock();
         };
         return std::make_pair<iterator, bool>(std::move(ret_it), 
@@ -478,8 +543,8 @@ const T& Tree<T, Compare, Alloc>::iterator::operator*() const {
 template<class T, class Compare, class Alloc>
 typename Tree<T, Compare, Alloc>::iterator& 
 Tree<T, Compare, Alloc>::iterator::operator++() {
-    if(*this == owner->mc_before_begin) {
-        *this = owner->begin();
+    if(*this == owner.lock()->mc_before_begin) {
+        *this = owner.lock()->begin();
         return *this;
     };
     Node_Ptr temp = self.lock();
@@ -493,8 +558,8 @@ Tree<T, Compare, Alloc>::iterator::operator++() {
     } else {
         while(temp->parent.lock()->left != temp) {
             temp = temp->parent.lock();
-            if(temp == owner->m_root) { 
-                self = owner->mc_end; 
+            if(temp == owner.lock()->m_root) { 
+                self = owner.lock()->mc_end; 
                 return *this; 
             };
         };
@@ -533,8 +598,8 @@ Tree<T, Compare, Alloc>::iterator::operator++(int) {
 template<class T, class Compare, class Alloc>
 typename Tree<T, Compare, Alloc>::iterator& 
 Tree<T, Compare, Alloc>::iterator::operator--() {
-    if(*this == owner->mc_end) {
-        *this = owner->before_end();
+    if(*this == owner.lock()->mc_end) {
+        *this = owner.lock()->before_end();
         return *this;
     };
     Node_Ptr temp = self.lock();
@@ -548,8 +613,8 @@ Tree<T, Compare, Alloc>::iterator::operator--() {
     } else {
         while(temp->parent.lock()->right != temp) {
             temp = temp->parent.lock();
-            if(temp == owner->m_root) { 
-                self = owner->mc_before_begin;
+            if(temp == owner.lock()->m_root) { 
+                self = owner.lock()->mc_before_begin;
                 return *this; 
             };
         };
@@ -584,9 +649,11 @@ int main() {
     };
 
     auto res1 = tr.insert(2);
+    auto res15 = tr.erase(res1.first);
     auto res2 = tr.insert(2);
-    std::cout << "\n" << (res1.first == tr.find(7)) << " " 
-        << res1.second << " " << res2.second;
+    std::cout << "\n" << (res1.first == res2.first) << " " 
+        << res1.second << " " << res2.second << " " << *res15 << "\n";
+    tr.print();
 
     return 0;
 };
