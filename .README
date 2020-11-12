@@ -1,0 +1,28 @@
+Important!
+This realization of set was not fully tested.
+
+After removing useless main function this realization may be used almost like std::set with a few functionality.
+Specification:
+
+Class declaration:
+template <typename Key,
+          class Compare = std::less<Key>,
+          class Allocator = std::allocator<Key>>
+class Tree;
+
+This class has all four iterators (const, reversed ...);
+
+Methods (all details are like std::set, look cppreference for more info):
+
+Insert - inserts value in set
+std::pair<iterator, bool> insert(const value_type& value);
+std::pair<iterator, bool> insert(value_type&& value);
+
+Erase - removes element with iterator pos from set
+iterator erase(iterator pos);
+
+Find - return iterator to the element with specific key
+iterator find(const Key& key);
+
+Print - prints tree hierarchy
+void print();
