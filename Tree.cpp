@@ -51,14 +51,13 @@ class Tree {
     iterator before_end() const;
 
  private:
-    Alloc raw_allocator;
+    Alloc m_raw_allocator;
     
     Node_Ptr m_root;
-    std::shared_ptr<Tree> self = std::shared_ptr<Tree>(this);
 
     // pass-the-end and befor-begin iterators
-    const iterator mc_end = iterator(self);
-    const iterator mc_before_begin = iterator(self);
+    const iterator mc_end = iterator(this);
+    const iterator mc_before_begin = iterator(this);
 
     struct Node {
         Node_Ptr left;
@@ -76,7 +75,7 @@ class Tree {
     class iterator : public std::iterator<std::bidirectional_iterator_tag, T> {
      private:
         Weak_Node_Ptr self;
-        std::weak_ptr<Tree> owner;
+        const Tree* owner;
 
      public:
         using reference       = const T&;
@@ -89,15 +88,12 @@ class Tree {
         ~iterator() {};
 
         iterator(const Node_Ptr& init, 
-                 const std::shared_ptr<Tree>& owner) : self(init), 
-                                                       owner(owner) {};
+                 const Tree* owner) : self(init), owner(owner) {};
         iterator(const Weak_Node_Ptr& init, 
-                 const std::weak_ptr<Tree>& owner) : self(init), 
-                                                       owner(owner) {};
+                 const Tree* owner) : self(init), owner(owner) {};
         iterator(Weak_Node_Ptr&& init, 
-                 const std::shared_ptr<Tree>& owner) : self(init), 
-                                                       owner(owner) {};
-        iterator(const std::shared_ptr<Tree>& owner) : owner(owner) {};
+                 const Tree* owner) : self(init), owner(owner) {};
+        iterator(const Tree* owner) : owner(owner) {};
 
         iterator& operator=(const iterator& to_copy); 
         iterator& operator=(iterator&& to_move);
@@ -188,7 +184,7 @@ Tree<T, Compare, Alloc>::m_erase(Node_Ptr e_node) {
         std::swap(temp->value, e_node->value);
         return m_erase(temp);
     } else {
-        iterator ret_it = iterator(e_node, self);
+        iterator ret_it = iterator(e_node, this);
         ++ret_it;
         Node_Ptr temp = e_node;
         Node_Ptr parent_cache = e_node->parent.lock();
@@ -239,7 +235,7 @@ Tree<T, Compare, Alloc>::find(const T& f_value) const {
             } else if (compare(temp->value, f_value)) {
                 temp = temp->right;
             } else {
-                return const_iterator(temp, self);
+                return const_iterator(temp, this);
             };
             if(!temp) {
                 return mc_end;
@@ -255,25 +251,25 @@ template<class InsType>
 typename Tree<T, Compare, Alloc>::Result_Pair 
 Tree<T, Compare, Alloc>::m_insert(InsType&& i_value) {
     if(!m_root) {
-        m_root = std::allocate_shared<Node>(raw_allocator, 
+        m_root = std::allocate_shared<Node>(m_raw_allocator, 
                                             mc_before_begin, 
                                             std::forward<InsType>(i_value));
-        return std::make_pair<iterator, bool>(iterator(m_root, self), true);
+        return std::make_pair<iterator, bool>(iterator(m_root, this), true);
     } else {
         Compare compare = Compare();
         std::shared_ptr<Node> temp = m_root;
         bool not_constructed = true;
         bool contained = false;
-        iterator ret_it(self);
+        iterator ret_it(this);
         while(not_constructed) {
             if(compare(i_value, temp->value)) {
                 if(!(temp->left)) {
                     temp->left = 
-                        std::allocate_shared<Node>(raw_allocator, 
+                        std::allocate_shared<Node>(m_raw_allocator, 
                                                    temp, 
                                                    std::forward<InsType>(i_value));
                     temp->diff++;
-                    ret_it = iterator(temp->left, self);
+                    ret_it = iterator(temp->left, this);
                     not_constructed = false;
                 } else {
                     temp = temp->left;
@@ -281,18 +277,18 @@ Tree<T, Compare, Alloc>::m_insert(InsType&& i_value) {
             } else if (compare(temp->value, i_value)) {
                 if(!(temp->right)) {
                     temp->right = 
-                        std::allocate_shared<Node>(raw_allocator, 
+                        std::allocate_shared<Node>(m_raw_allocator, 
                                                    temp, 
                                                    std::forward<InsType>(i_value));
                     temp->diff--;
-                    ret_it = iterator(temp->right, self);
+                    ret_it = iterator(temp->right, this);
                     not_constructed = false;
                 } else {
                     temp = temp->right;
                 };
             } else {
                 contained = true;
-                ret_it = iterator(temp, self);
+                ret_it = iterator(temp, this);
                 not_constructed = false;
             };
         };
@@ -342,7 +338,7 @@ Tree<T, Compare, Alloc>::begin() const {
     while(temp->left) {
         temp = temp->left;
     };
-    return iterator(temp, self);
+    return iterator(temp, this);
 };
 
 template<class T, class Compare, class Alloc>
@@ -352,7 +348,7 @@ Tree<T, Compare, Alloc>::before_end() const {
     while(temp->right) {
         temp = temp->right;
     };
-    return iterator(temp, self);
+    return iterator(temp, this);
 };
 
 //Different rotations and balances
@@ -543,8 +539,8 @@ const T& Tree<T, Compare, Alloc>::iterator::operator*() const {
 template<class T, class Compare, class Alloc>
 typename Tree<T, Compare, Alloc>::iterator& 
 Tree<T, Compare, Alloc>::iterator::operator++() {
-    if(*this == owner.lock()->mc_before_begin) {
-        *this = owner.lock()->begin();
+    if(*this == owner->mc_before_begin) {
+        *this = owner->begin();
         return *this;
     };
     Node_Ptr temp = self.lock();
@@ -558,8 +554,8 @@ Tree<T, Compare, Alloc>::iterator::operator++() {
     } else {
         while(temp->parent.lock()->left != temp) {
             temp = temp->parent.lock();
-            if(temp == owner.lock()->m_root) { 
-                self = owner.lock()->mc_end; 
+            if(temp == owner->m_root) { 
+                self = owner->mc_end; 
                 return *this; 
             };
         };
@@ -598,8 +594,8 @@ Tree<T, Compare, Alloc>::iterator::operator++(int) {
 template<class T, class Compare, class Alloc>
 typename Tree<T, Compare, Alloc>::iterator& 
 Tree<T, Compare, Alloc>::iterator::operator--() {
-    if(*this == owner.lock()->mc_end) {
-        *this = owner.lock()->before_end();
+    if(*this == owner->mc_end) {
+        *this = owner->before_end();
         return *this;
     };
     Node_Ptr temp = self.lock();
@@ -613,8 +609,8 @@ Tree<T, Compare, Alloc>::iterator::operator--() {
     } else {
         while(temp->parent.lock()->right != temp) {
             temp = temp->parent.lock();
-            if(temp == owner.lock()->m_root) { 
-                self = owner.lock()->mc_before_begin;
+            if(temp == owner->m_root) { 
+                self = owner->mc_before_begin;
                 return *this; 
             };
         };
@@ -651,7 +647,7 @@ int main() {
     auto res1 = tr.insert(2);
     auto res15 = tr.erase(res1.first);
     auto res2 = tr.insert(2);
-    std::cout << "\n" << (res1.first == res2.first) << " " 
+    std::cout << "\n" << (res15 == res2.first) << " " 
         << res1.second << " " << res2.second << " " << *res15 << "\n";
     tr.print();
 
