@@ -21,7 +21,7 @@ class Tree {
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-    Tree() {};
+    Tree() : m_size(0) {};
     
     Result_Pair insert(T&& insert_value);
     Result_Pair insert(const T& insert_value);
@@ -30,7 +30,7 @@ class Tree {
 
     const_iterator find(const T& value_to_find) const;
 
-
+    std::size_t size() const { return m_size; };
 
     void print();
 
@@ -54,6 +54,7 @@ class Tree {
     Alloc m_raw_allocator;
     
     Node_Ptr m_root;
+    std::size_t m_size;
 
     // pass-the-end and befor-begin iterators
     const iterator mc_end = iterator(this);
@@ -136,8 +137,8 @@ class Tree {
     void m_big_rotate_left(const Node_Ptr&);
 
     // performing balancing dependent on node b from which we reach top node a to perform rotation with
-    void m_left_balance(const Node_Ptr&); // when left a-subtree's height lesser (a.diff -> -2)
-    void m_right_balance(const Node_Ptr&); // when right a-subtree's height lesser (a.diff -> 2) 
+    void m_left_balance(const Node_Ptr&); // when left a-subtree's height less (a.diff -> -2)
+    void m_right_balance(const Node_Ptr&); // when right a-subtree's height less (a.diff -> 2) 
 };
         
 
@@ -165,6 +166,7 @@ void Tree<T, Compare, Alloc>::print() {
     };       
 };
 
+// Erases provided node assuming it belongs to tree
 template<class T, class Compare, class Alloc>
 typename Tree<T, Compare, Alloc>::iterator 
 Tree<T, Compare, Alloc>::m_erase(Node_Ptr e_node) {
@@ -193,20 +195,25 @@ Tree<T, Compare, Alloc>::m_erase(Node_Ptr e_node) {
         } else {
             parent_cache->right.reset();
         };
+        --m_size;
         
         while(temp != m_root) {
             parent_cache = temp->parent.lock();
             if(parent_cache->diff == 1) {
                 if(parent_cache->left == temp) {
                     break;
-                } else {
+                } else if (parent_cache->right == temp) {
                     m_right_balance(parent_cache->left);
+                } else {
+                    parent_cache->diff = 0;
                 };
             } else if (parent_cache->diff == -1) {
                 if(parent_cache->right == temp) {
                     break;
-                } else {
+                } else if(parent_cache->left == temp) {
                     m_left_balance(parent_cache->right);
+                } else {
+                    parent_cache->diff = 0;
                 };
             };
 
@@ -254,6 +261,7 @@ Tree<T, Compare, Alloc>::m_insert(InsType&& i_value) {
         m_root = std::allocate_shared<Node>(m_raw_allocator, 
                                             mc_before_begin, 
                                             std::forward<InsType>(i_value));
+        ++m_size;
         return std::make_pair<iterator, bool>(iterator(m_root, this), true);
     } else {
         Compare compare = Compare();
@@ -292,6 +300,7 @@ Tree<T, Compare, Alloc>::m_insert(InsType&& i_value) {
                 not_constructed = false;
             };
         };
+        if(!contained) { ++m_size; };
         while(temp != m_root) {
             if(temp->diff == 0) {
                 break;
@@ -646,10 +655,11 @@ int main() {
 
     auto res1 = tr.insert(2);
     auto res15 = tr.erase(res1.first);
-    auto res2 = tr.insert(2);
-    std::cout << "\n" << (res15 == res2.first) << " " 
-        << res1.second << " " << res2.second << " " << *res15 << "\n";
+    // auto res2 = tr.insert(2);
+    //std::cout << "\n" << (res15 == res2.first) << " " 
+     //   << res1.second << " " << res2.second << " " << *res15 << "\n";
     tr.print();
+    std::cout << "\n" << tr.size();
 
     return 0;
 };
