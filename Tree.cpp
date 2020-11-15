@@ -22,6 +22,9 @@ class Tree {
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     Tree() : m_size(0) {};
+    Tree(const Tree&);
+
+    Tree& operator=(const Tree&);
     
     Result_Pair insert(T&& insert_value);
     Result_Pair insert(const T& insert_value);
@@ -79,7 +82,7 @@ class Tree {
         const Tree* owner;
 
      public:
-        using reference       = const T&;
+        using reference = const T&;
 
         iterator() = delete;
         iterator(iterator&& init) : self(std::move(init.self)), 
@@ -122,6 +125,8 @@ class Tree {
 
     iterator m_erase(Node_Ptr node_to_erase);
 
+    Node_Ptr m_copy_subtree(const Node_Ptr&, const Node_Ptr&, 
+                            Alloc& alloc);
 
     // Here const means that pointer remains on the same node, 
     // tree structure changes!
@@ -145,6 +150,38 @@ class Tree {
 //template<class T, class Compare>
 //Tree<T>::Node::Tree_Node();
 //Method realization
+
+template<class T, class Compare, class Alloc>
+Tree<T, Compare, Alloc>::Tree(const Tree& copy) : m_size(copy.m_size) {
+    m_root = m_copy_subtree(copy.m_root, Node_Ptr(), m_raw_allocator);
+};
+
+template<class T, class Compare, class Alloc>
+Tree<T, Compare, Alloc>&
+Tree<T, Compare, Alloc>::operator=(const Tree& copy) {
+    if(m_root != copy.m_root) {
+        m_size = copy.m_size;
+        m_root = m_copy_subtree(copy.m_root, Node_Ptr(), 
+                                m_raw_allocator);
+    };
+    return *this;
+};
+
+template<class T, class Compare, class Alloc>
+typename Tree<T, Compare, Alloc>::Node_Ptr 
+Tree<T, Compare, Alloc>::m_copy_subtree(const Node_Ptr& to_copy, 
+                                        const Node_Ptr& parent,
+                                        Alloc& alloc) {
+    Node_Ptr ret = std::allocate_shared<Node>(alloc, *to_copy);
+    ret->parent = parent;
+    if(to_copy->left) {
+        ret->left = m_copy_subtree(to_copy->left, ret, alloc);
+    };
+    if(to_copy->right) {
+        ret->right = m_copy_subtree(to_copy->right, ret, alloc);
+    };
+    return ret;
+};
 
 template<class T, class Compare, class Alloc>
 void Tree<T, Compare, Alloc>::print() {
@@ -652,13 +689,19 @@ int main() {
     for(auto it = tr.rbegin(); it != tr.rend(); it++) {
         std::cout << *it << ' ';
     };
-
-    auto res1 = tr.insert(2);
-    auto res15 = tr.erase(res1.first);
-    // auto res2 = tr.insert(2);
+    
+    Tree<int, std::greater<int>> tr2;
+    tr2 = tr = tr;
+    tr2 = tr;
+    auto res1 = tr2.insert(2);
+    auto res15 = tr2.erase(res1.first);
+    auto res2 = tr2.insert(2);
     //std::cout << "\n" << (res15 == res2.first) << " " 
      //   << res1.second << " " << res2.second << " " << *res15 << "\n";
+    std::cout << '\n';
     tr.print();
+    std::cout << '\n';
+    tr2.print();
     std::cout << "\n" << tr.size();
 
     return 0;
