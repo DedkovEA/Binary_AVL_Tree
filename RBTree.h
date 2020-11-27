@@ -56,7 +56,7 @@ private:
 		Chain(Chain&&) noexcept;
 		Chain& operator=(Chain&&) noexcept;
 		~Chain();
-		Chain* right, *left;
+		Chain* right, *left, *parent;
 		T value;
 		/*true - red, false - black*/
 		bool color, isLeaf;
@@ -64,6 +64,7 @@ private:
 
 
 	Chain* root_;
+	static Compare comp_;
 /*
 	template <class U>
 	friend std::ostream& operator<< (std::ostream& out, const RBTree<U>& tree);

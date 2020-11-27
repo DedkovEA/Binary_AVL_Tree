@@ -21,6 +21,9 @@ RBTree<T, Compare>::RBTree(const RBTree& other)
 template <class T, class Compare>
 RBTree<T, Compare>& RBTree<T, Compare>::operator=(const RBTree& other)
 {
+	if (&other == this) {
+		return *this;
+	}
 	if (root_ != nullptr) {
 		delete root_;
 	}
@@ -41,6 +44,10 @@ RBTree<T, Compare>::RBTree(RBTree&& other) noexcept
 template <class T, class Compare>
 RBTree<T, Compare>& RBTree<T, Compare>::operator=(RBTree&& other) noexcept
 {
+	if (&other == this) {
+		return *this;
+	}
+
 	if (root_ != nullptr) {
 		delete root_;
 	}

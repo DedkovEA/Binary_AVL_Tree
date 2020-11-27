@@ -6,5 +6,5 @@ int main()
 	tree1.insert(5);
 	tree1.insert(10);
 	tree1.insert(15);
-	RBTree<int32_t> tree2 = std::move(tree1);
+	RBTree<int32_t> tree2 = tree1;
 }

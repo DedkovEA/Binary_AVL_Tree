@@ -3,14 +3,16 @@
 #include <utility>
 /*--------------------------Constructors and distructor ----------------*/
 template <class T, class Compare>
-RBTree<T, Compare>::Chain::Chain(): left(new Chain(Flags::LEAF)), right(new Chain(Flags::LEAF)), color(RED), value(std::move(T())), isLeaf(false)
+RBTree<T, Compare>::Chain::Chain(): left(new Chain(Flags::LEAF)), right(new Chain(Flags::LEAF)), color(RED), value(std::move(T())), isLeaf(false), parent(nullptr)
 {
+	left->parent = right -> parent = this;
 }
 
 template <class T, class Compare>
 RBTree<T, Compare>::Chain::Chain(const Flags& flag)
 {
 	if (flag == Flags::LEAF) {
+		parent = nullptr;
 		color = BLACK;
 		left = nullptr;
 		right = nullptr;
@@ -27,7 +29,7 @@ RBTree<T, Compare>::Chain::Chain(const T& initValue) : Chain(), value(initValue)
 {}
 
 template <class T, class Compare>
-RBTree<T, Compare>::Chain::Chain(const typename RBTree<T, Compare>::Chain& other)
+RBTree<T, Compare>::Chain::Chain(const Chain& other)
 {
 	if (left != nullptr) {
 		delete left;
@@ -37,12 +39,14 @@ RBTree<T, Compare>::Chain::Chain(const typename RBTree<T, Compare>::Chain& other
 	}
 	if (other.left != nullptr) {
 		left = new Chain(*other.left);
+		left->parent = this;
 	}
 	else {
 		left = nullptr;
 	}
 	if (other.right != nullptr) {
 		right = new Chain(*other.right);
+		right->parent = this;
 	}
 	else {
 		right = nullptr;
@@ -53,8 +57,12 @@ RBTree<T, Compare>::Chain::Chain(const typename RBTree<T, Compare>::Chain& other
 }
 
 template <class T, class Compare>
-typename RBTree<T, Compare>::Chain& RBTree<T, Compare>::Chain::operator=(const typename RBTree<T, Compare>::Chain& other)
+typename RBTree<T, Compare>::Chain& RBTree<T, Compare>::Chain::operator=(const Chain& other)
 {
+	if (&other == this) {
+		return *this;
+	}
+
 	if (left != nullptr) {
 		delete left;
 	}
@@ -63,12 +71,14 @@ typename RBTree<T, Compare>::Chain& RBTree<T, Compare>::Chain::operator=(const t
 	}
 	if (other.left != nullptr) {
 		left = new Chain(*other.left);
+		left->parent = this;
 	}
 	else {
 		left = nullptr;
 	}
 	if (other.right != nullptr) {
 		right = new Chain(*other.right);
+		right->parent = this;
 	}
 	else {
 		right = nullptr;
@@ -76,6 +86,7 @@ typename RBTree<T, Compare>::Chain& RBTree<T, Compare>::Chain::operator=(const t
 	color = other.color;
 	value = other.value;
 	isLeaf = other.isLeaf;
+	parent = other.parent;
 	return (*this);
 }
 
@@ -93,16 +104,22 @@ RBTree<T, Compare>::Chain::Chain(typename RBTree<T, Compare>::Chain&& other) noe
 	color = std::move(other.color);
 	value = std::move(other.value);
 	isLeaf = std::move(other.isLeaf);
+	parent = std::move(other.parent);
+
 	other.left = nullptr;
 	other.right = nullptr;
 	other.color = 0;
 	other.value = std::move(T());
 	other.isLeaf = false;
+	other.parent = nullptr;
 }
 
 template <class T, class Compare>
 typename RBTree<T, Compare>::Chain& RBTree<T, Compare>::Chain::operator=(typename RBTree<T, Compare>::Chain&& other) noexcept
 {
+	if (&other == this) {
+		return (*this);
+	}
 	if (left != nullptr) {
 		delete left;
 	}
@@ -114,12 +131,14 @@ typename RBTree<T, Compare>::Chain& RBTree<T, Compare>::Chain::operator=(typenam
 	color = std::move(other.color);
 	value = std::move(other.value);
 	isLeaf = std::move(other.isLeaf);
+	parent = std::move(other.parent);
 
 	other.left = nullptr;
 	other.right = nullptr;
 	other.color = 0;
 	other.value = std::move(T());
 	other.isLeaf = false;
+	other.parent = nullptr;
 	return *(this);
 }
 
