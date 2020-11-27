@@ -24,5 +24,8 @@ iterator erase(iterator pos);
 Find - return iterator to the element with specific key
 iterator find(const Key& key);
 
+Size - returns the nubmer of elements in container
+std::size_t size() const;
+
 Print - prints tree hierarchy
 void print();
