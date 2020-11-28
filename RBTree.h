@@ -11,36 +11,8 @@ public:
 	RBTree(RBTree&&) noexcept;
 	RBTree& operator=(RBTree&&) noexcept;
 	~RBTree();
-	void insert(const T& key)
-	{
-		Chain* ptr = root_, * prevLeaf = nullptr;
-		while (ptr != nullptr) {
-			if (key < ptr->value) {
-				prevLeaf = ptr;
-				ptr = ptr->left;
-				continue;
-			}
-			if (key > ptr->value) {
-				prevLeaf = ptr;
-				ptr = ptr->right;
-				continue;
-			}
-			return;
-		}
-		Chain* newLeaf = new Chain;
-		newLeaf->value = key;
-		if (prevLeaf == nullptr) {
-			root_ = newLeaf;
-		}
-		else {
-			if (key < prevLeaf->value) {
-				prevLeaf->left = newLeaf;
-			}
-			else {
-				prevLeaf->right = newLeaf;
-			}
-		}
-	}
+	void insert(const T& key);
+	void test();
 private:
 	enum class Flags {
 		LEAF
@@ -61,13 +33,18 @@ private:
 		/*true - red, false - black*/
 		bool color, isLeaf;
 	};
-
+	/*Insert without rotation and s.o., returns true, if tree has changed*/
+	bool native_insert(const T&);
+	void rotate_left(Chain*);
+	void rotate_right(Chain*);
 
 	Chain* root_;
 	static Compare comp_;
+
+	template <class U, class Comp>
+	friend std::ostream& operator<< (std::ostream& out, const RBTree<U, Comp>& tree);
 /*
-	template <class U>
-	friend std::ostream& operator<< (std::ostream& out, const RBTree<U>& tree);
+
 	int32_t height()
 	{
 		if (!root_) {
