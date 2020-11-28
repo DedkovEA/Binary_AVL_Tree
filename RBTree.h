@@ -13,6 +13,15 @@ public:
 	~RBTree();
 	void insert(const T& key);
 	void test();
+	int32_t height()
+	{
+		if (!root_) {
+			return 0;
+		}
+		else {
+			return subtree_height(root_);
+		}
+	}
 private:
 	enum class Flags {
 		LEAF
@@ -33,28 +42,19 @@ private:
 		/*true - red, false - black*/
 		bool color, isLeaf;
 	};
-	/*Insert without rotation and s.o., returns true, if tree has changed*/
-	bool native_insert(const T&);
+	Chain* BST_insert(const T&);
 	void rotate_left(Chain*);
 	void rotate_right(Chain*);
-
+	void ins_balance(Chain*);
 	Chain* root_;
 	static Compare comp_;
 
 	template <class U, class Comp>
 	friend std::ostream& operator<< (std::ostream& out, const RBTree<U, Comp>& tree);
-/*
 
-	int32_t height()
-	{
-		if (!root_) {
-			return 0;
-		}
-		else {
-			return subtree_height(root_);
-		}
-	}
-	bool is_search_tree()
+
+
+	/*bool is_search_tree()
 	{
 		if (root_ == nullptr) {
 			return true;
@@ -62,7 +62,7 @@ private:
 		else {
 			return is_search_subtree(root_);
 		}
-	}
+	}*/
 	int32_t subtree_height(Chain* subtree) {
 		if (subtree == nullptr) {
 			return 0;
@@ -71,7 +71,7 @@ private:
 			return std::max(subtree_height(subtree->left), subtree_height(subtree->right)) + 1;
 		}
 	}
-	bool is_search_subtree(Chain* subtree)
+	/*bool is_search_subtree(Chain* subtree)
 	{
 		if (subtree == nullptr) {
 			return true;

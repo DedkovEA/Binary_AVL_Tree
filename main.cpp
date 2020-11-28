@@ -3,11 +3,10 @@
 int main()
 {
 	RBTree<int32_t> tree1;
-	tree1.insert(5);
-	tree1.insert(2);
-	tree1.insert(3);
-	tree1.insert(10);
-	tree1.insert(15);
-	tree1.test();
-	std::cout << tree1;
+
+
+	for (int32_t i = 0; i < 1000; ++i) {
+		tree1.insert(i);
+	}
+	std::cout << tree1.height();
 }

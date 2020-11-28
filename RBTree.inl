@@ -65,12 +65,12 @@ RBTree<T, Compare>::~RBTree() {
 /*---------------------Modifing functions-----------------------------*/
 
 template <class T, class Compare>
-bool RBTree<T, Compare>::native_insert(const T& key)
+typename RBTree<T, Compare>::Chain* RBTree<T, Compare>::BST_insert(const T& key)
 {
 	Chain* ptr = root_;
 	while (!(ptr->isLeaf)) {
 		if (!comp_(key, ptr->value) && !comp_(ptr->value, key)) {
-			return false;	//The object already exists
+			return nullptr;	//The object already exists
 		}
 		if (comp_(key,ptr->value)) {
 			ptr = ptr->left;
@@ -82,7 +82,7 @@ bool RBTree<T, Compare>::native_insert(const T& key)
 	Chain* tmpParent = ptr->parent;
 	(*ptr) = std::move(Chain(key));
 	ptr->parent = tmpParent;
-	return true;
+	return ptr;
 }
 
 template <class T, class Compare>
@@ -144,12 +144,95 @@ void RBTree<T, Compare>::rotate_right(Chain* subTree)
 template <class T, class Compare>
 void RBTree<T, Compare>::insert(const T& key)
 {
-	native_insert(key);
+	Chain* insertedChain = BST_insert(key);
+	if (insertedChain==nullptr) {
+		return;
+	}
+	else {
+		ins_balance(insertedChain);
+	}
+
 }
+
+template <class T, class Compare>
+void RBTree<T, Compare>::ins_balance(Chain* subTree)
+{
+	Chain* parent = subTree->parent;
+	Chain* grandad = nullptr;
+	Chain* uncle = nullptr;
+	if (parent != nullptr) {
+		grandad = parent->parent;
+		if (grandad != nullptr) {
+			if (grandad->left == parent) {
+				uncle = grandad->right;
+			}
+			else {
+				uncle = grandad->left;
+			}
+		}
+	}
+
+	/*------------------------Case 1--------------------------------*/
+	/*---------------It's root, painting it to black----------------*/
+	if (subTree == root_) {
+		subTree->color = BLACK;
+		return;
+	}
+	/*------------------------Case2---------------------------------*/
+	/*-------------Parent is black. All right-----------------------*/
+	if (subTree->parent->color == BLACK) {
+		return;
+	}
+	/*-------------------------Case3---------------------------------*/
+	/*----Parent and uncle are red. Repainting and rerecursion-------*/
+	/*----------for grandad(it always exists in this case)-----------*/
+	if (parent->color == RED && uncle->color == RED) {
+		parent->color = BLACK;
+		uncle->color = BLACK;
+		grandad->color = RED;
+		ins_balance(grandad);
+		return;
+	}
+	/*--------------------------Case4--------------------------------*/
+	/*-------Parent is red, uncle is black, child "orientation"------*/
+	/*---differs from parent. Rotation parent to reduce to case 5,---*/
+	/*----------------------rerecursion for parent-------------------*/
+	if (parent->color == RED && uncle->color == BLACK) {
+		if (parent == grandad->left && subTree == parent->right) {
+			rotate_left(parent);
+			ins_balance(parent);
+			return;
+		}
+		if (parent == grandad->right && subTree == parent->left) {
+			rotate_right(parent);
+			ins_balance(parent);
+			return;
+		}
+	}
+
+	/*--------------------------Case5--------------------------------*/
+	/*-------Parent is red, uncle is black, child has same ----------*/
+	/*------orientation as parent. Rotation grandad, repainting------*/
+	if (parent->color == RED && uncle->color == BLACK) {
+		if (parent == grandad->left && subTree == parent->left) {
+			rotate_right(grandad);
+			grandad->color = RED;
+			parent->color = BLACK;
+			return;
+		}
+		if (parent == grandad->right && subTree == parent->right) {
+			rotate_left(grandad);
+			grandad->color = RED;
+			parent->color = BLACK;
+			return;
+		}
+	}
+}
+
 template <class T, class Compare>
 void RBTree<T, Compare>::test() {
-	rotate_left(root_->right);
-	rotate_right(root_->right);
+	rotate_left(root_);
+	rotate_right(root_);
 }
 
 /*-------------------Static members------------------------------------*/
