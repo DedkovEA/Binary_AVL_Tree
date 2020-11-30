@@ -237,6 +237,18 @@ typename RBTree<T, Compare>::Chain* RBTree<T, Compare>::find_chain(const T& key)
 }
 
 template <class T, class Compare>
+bool RBTree<T, Compare>::find(const T& key)
+{
+	Chain* ptr = find_chain(key);
+	if (ptr == nullptr) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
+template <class T, class Compare>
 void RBTree<T, Compare>::ins_balance(Chain* subTree)
 {
 	Chain* parent = subTree->parent;

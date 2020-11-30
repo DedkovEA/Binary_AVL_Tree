@@ -13,6 +13,8 @@ public:
 	~RBTree();
 	void insert(const T& key);
 	void erase(const T& key);
+	bool find(const T& key);
+private:
 	void test();
 	int32_t height()
 	{
@@ -23,7 +25,6 @@ public:
 			return subtree_height(root_);
 		}
 	}
-private:
 	enum class Flags {
 		LEAF
 	};
