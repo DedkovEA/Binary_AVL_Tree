@@ -6,3 +6,4 @@ Release/
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+main.cpp
