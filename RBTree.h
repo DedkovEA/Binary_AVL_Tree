@@ -12,6 +12,7 @@ public:
 	RBTree& operator=(RBTree&&) noexcept;
 	~RBTree();
 	void insert(const T& key);
+	void erase(const T& key);
 	void test();
 	int32_t height()
 	{
@@ -29,12 +30,23 @@ private:
 	class Chain
 	{
 	public:
+		/*DO NOT FORGET TO INIT PARENT!!!*/
 		Chain();
+
+		/*DO NOT FORGET TO INIT PARENT!!!*/
 		Chain(const T&);
+
+		/*DO NOT FORGET TO INIT PARENT!!!*/
 		Chain(const Chain&);
+
+		/*DO NOT FORGET TO INIT PARENT!!!*/
 		Chain(const Flags&);
+
 		Chain& operator=(const Chain&);
+
+		/*DO NOT FORGET TO INIT PARENT!!!*/
 		Chain(Chain&&) noexcept;
+
 		Chain& operator=(Chain&&) noexcept;
 		~Chain();
 		Chain* right, *left, *parent;
@@ -45,7 +57,13 @@ private:
 	Chain* BST_insert(const T&);
 	void rotate_left(Chain*);
 	void rotate_right(Chain*);
+	void rotate_LR(Chain*);
+	void rotate_RL(Chain*);
 	void ins_balance(Chain*);
+	void erase_balance(Chain*, Chain*);
+	void erase_chain(Chain*);
+	Chain* find_chain(const T&);
+	Chain* min_value(Chain*);
 	Chain* root_;
 	static Compare comp_;
 
