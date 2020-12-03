@@ -14,6 +14,7 @@ public:
 	void insert(const T& key);
 	void erase(const T& key);
 	bool find(const T& key);
+	int32_t size();
 private:
 	void test();
 	int32_t height()
