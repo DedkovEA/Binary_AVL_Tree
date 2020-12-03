@@ -568,6 +568,26 @@ typename RBTree<T, Compare>::Chain* RBTree<T, Compare>::min_value(Chain* subTree
 }
 
 template <class T, class Compare>
+int32_t RBTree<T, Compare>::size() 
+{
+	int32_t res = 0;
+	std::queue<Chain*> q;
+	q.push(root_);
+	Chain* ptr = nullptr;
+	while (!q.empty())
+	{
+		ptr = q.front();
+		q.pop();
+		if (!(ptr->isLeaf)) {
+			++res;
+			q.push(ptr->left);
+			q.push(ptr->right);
+		}
+	}
+	return res;
+}
+
+template <class T, class Compare>
 void RBTree<T, Compare>::test() {
 	*(root_) = std::move(Chain(7));
 	root_->color = BLACK;
