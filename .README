@@ -18,8 +18,9 @@ Insert - inserts value in set
 std::pair<iterator, bool> insert(const value_type& value);
 std::pair<iterator, bool> insert(value_type&& value);
 
-Erase - removes element with iterator pos from set
+Erase - removes element with iterator pos or specific key from set
 iterator erase(iterator pos);
+std::size_t erase(const Key& key);
 
 Find - return iterator to the element with specific key
 iterator find(const Key& key);
