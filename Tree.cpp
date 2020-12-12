@@ -212,15 +212,15 @@ typename Tree<T, Compare, Alloc>::iterator
 Tree<T, Compare, Alloc>::m_erase(Node_Ptr e_node) {
     if(e_node->left || e_node->right) {
         Node_Ptr temp = e_node;
-        if(temp->left) {
-            temp = temp->left;
-            while(temp->right) {
-                temp = temp->right;
-            };
-        } else {
+        if(temp->right) {
             temp = temp->right;
             while(temp->left) {
                 temp = temp->left;
+            };
+        } else {
+            temp = temp->left;
+            while(temp->right) {
+                temp = temp->right;
             };
         };
         std::swap(temp->value, e_node->value);
@@ -228,38 +228,46 @@ Tree<T, Compare, Alloc>::m_erase(Node_Ptr e_node) {
     } else {
         iterator ret_it = iterator(e_node, this);
         ++ret_it;
+
         Node_Ptr temp = e_node;
         Node_Ptr parent_cache = e_node->parent.lock();
+        
+        while(temp != m_root) {
+            parent_cache = temp->parent.lock();
+            if((parent_cache->diff == 1) && 
+               (parent_cache->right == temp)) {
+                temp = m_left_balance(parent_cache->left);
+                // Tree height didn't changed in this particular case
+                if(temp->diff != 0) { break; };
+            } else if ((parent_cache->diff == -1) && 
+                       (parent_cache->left == temp)) {
+                temp = m_right_balance(parent_cache->right);
+                // Tree height didn't changed in this particular case
+                if(temp->diff != 0) { break; };
+            } else {
+                if(parent_cache->left == temp) {
+                    (parent_cache->diff)--;
+                    if(parent_cache->diff != 0) { break; };
+                } else {
+                    (parent_cache->diff)++;
+                    if(parent_cache->diff != 0) { break; };
+                };
+                temp = parent_cache;
+            };
+
+            // if(temp == m_root) { break; };
+            // temp = temp->parent.lock();
+        };
+
+        // Finally, delete e_node
+        parent_cache = e_node->parent.lock();
         if(parent_cache->left == e_node) {    //not actually destroyed yet
             parent_cache->left.reset();
         } else {
             parent_cache->right.reset();
         };
         --m_size;
-        
-        while(temp != m_root) {
-            if(temp->diff != 0) {
-                break;
-            };
 
-            parent_cache = temp->parent.lock();
-            if((parent_cache->diff == 1) && 
-               (parent_cache->right == temp)) {
-                temp = m_right_balance(parent_cache->left);
-            } else if ((parent_cache->diff == -1) && 
-                       (parent_cache->left == temp)) {
-                temp = m_left_balance(parent_cache->right);
-            } else {
-                if(parent_cache->left == temp) {
-                    temp->diff--;
-                } else {
-                    temp->diff++;
-                }
-            };
-
-            if(temp == m_root) { break; };
-            temp = temp->parent.lock();
-        };
         return ret_it;
     };
 };
@@ -379,9 +387,10 @@ Tree<T, Compare, Alloc>::m_insert(InsType&& i_value) {
                 } else {
                     parent_cache->diff--;
                 };
+                temp = parent_cache;
             };
-            if(temp == m_root) { break; };
-            temp = temp->parent.lock();
+            // if(temp == m_root) { break; };
+            // temp = temp->parent.lock();
         };
         return std::make_pair<iterator, bool>(std::move(ret_it), true);
     };
@@ -706,4 +715,3 @@ Tree<T, Compare, Alloc>::iterator::operator--(int) {
     --(*this);
     return temp;
 };
-
