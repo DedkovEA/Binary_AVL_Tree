@@ -9,11 +9,12 @@
 #include "RBTree.h"
 
 // memory leaks
+/*
 #define __CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #define new DEBUG_NEW
-
+*/
 
 class Timer
 {
@@ -41,7 +42,9 @@ public:
 
 int main() {
     // detecting memory leaks
+    /*
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    */
 
     // start generating of random unsigned int (4 bites)
     std::random_device rd;
@@ -134,9 +137,9 @@ int main() {
     std::ofstream f_insert;
     std::ofstream f_find;
     std::ofstream f_erase;
-    f_insert.open("D:\\Study\\Tree\\Asymp_Insert.txt");
-    f_find.open("D:\\Study\\Tree\\Asymp_Find.txt");
-    f_erase.open("D:\\Study\\Tree\\Asymp_Erase.txt");
+    f_insert.open("Asymp_Insert.txt");
+    f_find.open("Asymp_Find.txt");
+    f_erase.open("Asymp_Erase.txt");
 
 
     if (f_insert.is_open() && f_find.is_open() && f_erase.is_open()) {
@@ -145,10 +148,10 @@ int main() {
         std::cout << "Enter the number of steps in asymptotic test: ";
         std::cin >> N_2;
         int elements_per_step;
-        std::cout << "enter tne number of elements per step: ";
+        std::cout << "Enter tne number of elements per step: ";
         std::cin >> elements_per_step;
 
-        double prev, pres;
+        double pres;
         {
             for (int i = 0; i < N_2; i += 1) {
                 {
@@ -167,42 +170,24 @@ int main() {
                     for (int j = 0; j < elements_per_step; j += 1) {
                         our_set.find(mersenne());
                     }
-                    f_find << t.elapsed() << ' ' << i * elements_per_step + elements_per_step / 2 << '\n';
+                    pres = t.elapsed();
                 }
+                f_find << pres << ' ' << i * elements_per_step + elements_per_step / 2 << '\n';
             }
-
-            /*
-            for (int i = 0; i < N_2; i += 1) {
-                if (!(i % 10000)) {
-                    if (i) {
-                        f_insert << i << ' ' << t.elapsed() << '\n';
-                    }
-
-
-                    // find asymp
-                    t.reset();
-                    for (int j = 0; j < 10000; j += 1) {
-                        our_set.find(rand());
-                    }
-                    f_find << i << ' ' << t.elapsed() << '\n';
-
-
-                    t.reset();
-                }
-                our_set.insert(i);
-            }
-            */
         }
 
         // erase asymp
         {
-            Timer t;
             for (int i = 0; i < N_2; i += 1) {
-                t.reset();
-                for (int j = 0; j < elements_per_step; j += 1) {
-                    our_set.erase(i * elements_per_step + j);
+                {
+                    Timer t;
+                    t.reset();
+                    for (int j = 0; j < elements_per_step; j += 1) {
+                        our_set.erase(i * elements_per_step + j);
+                    }
+                    pres = t.elapsed();
                 }
-                f_erase << t.elapsed() << ' ' << our_set.size() + elements_per_step / 2 << '\n';
+                f_erase << pres << ' ' << our_set.size() + elements_per_step / 2 << '\n';
             }
         }
     }
@@ -211,15 +196,11 @@ int main() {
     }
 
 
-
-
     // deliberately created memory leak
+
+    /*
     int* ptr = new int;
     ptr = new int;
-
-    // another method to detect memory leaks
-    /*
-    _CrtDumpMemoryLeaks();
     */
 
     return 0;
