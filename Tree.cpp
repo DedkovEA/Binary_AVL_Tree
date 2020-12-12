@@ -707,36 +707,3 @@ Tree<T, Compare, Alloc>::iterator::operator--(int) {
     return temp;
 };
 
-
-
-int main() {
-    Tree<int, std::greater<int>> tr;
-    int N;
-    std::cin >> N;
-    int tmp = 0;
-    for(int i = 0; i < N; i++) {
-        std::cin >> tmp;
-        tr.insert(tmp);
-    };
-    tr.print();
-    std::cout << '\n';
-    for(auto it = tr.rbegin(); it != tr.rend(); it++) {
-        std::cout << *it << ' ';
-    };
-    
-    Tree<int, std::greater<int>> tr2;
-    tr2 = tr = tr;
-    tr2 = tr;
-    auto res1 = tr2.insert(2);
-    auto res15 = tr2.erase(res1.first);
-    auto res2 = tr2.insert(2);
-    //std::cout << "\n" << (res15 == res2.first) << " " 
-     //   << res1.second << " " << res2.second << " " << *res15 << "\n";
-    std::cout << '\n';
-    tr.print();
-    std::cout << '\n';
-    tr2.print();
-    std::cout << "\n" << tr.size();
-
-    return 0;
-};
